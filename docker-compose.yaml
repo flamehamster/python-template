@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: python-template-db
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+    ports:
+      - 15000:5432
+    volumes:
+      - ./postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U test -d test']
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  app:
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    container_name: python-template
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - 4000:3000
+    env_file:
+      - .env
+    environment:
+      PG_HOST: python-template-db
+    restart: always
+    volumes:
+      - ./:/app
+      - /app/.venv
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    name: app-network
+    driver: bridge
